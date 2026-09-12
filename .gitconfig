@@ -1,0 +1,4 @@
+[alias]
+    sub-update = "!bash bonbon.sh update"
+    sub-check  = "!bash bonbon.sh check"
+    sub-help = "!bash bonbon.sh help"
