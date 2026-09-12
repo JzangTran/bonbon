@@ -1,0 +1,9 @@
+[submodule "backend"]
+	path = backend
+	url = https://github.com/JzangTran/bonbon-backend.git
+[submodule "mobile"]
+	path = mobile
+	url = https://github.com/JzangTran/bonbon-mobile.git
+[submodule "web"]
+	path = web
+	url = https://github.com/JzangTran/bonbon-web.git
