@@ -1,9 +1,12 @@
 [submodule "backend"]
 	path = backend
 	url = https://github.com/JzangTran/bonbon-backend.git
+	branch = main
 [submodule "mobile"]
 	path = mobile
 	url = https://github.com/JzangTran/bonbon-mobile.git
+	branch = main
 [submodule "web"]
 	path = web
 	url = https://github.com/JzangTran/bonbon-web.git
+	branch = main
