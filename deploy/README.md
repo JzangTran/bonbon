@@ -5,7 +5,7 @@ wires them up.
 
 | File | Purpose |
 |---|---|
-| `compose.dev.yaml` | Local PostgreSQL 17 and Redis 7.4 for development |
+| `compose.dev.yaml` | Local PostgreSQL 17, Redis 7.4 and Mailpit (catches outgoing email, inbox http://localhost:8025) |
 | `.env.example` | Every variable used by compose and the backend, with dev-only values |
 
 ## Local development
