@@ -41,5 +41,20 @@ services:
       - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
       - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
 
+  s3:
+    # S3-compatible stand-in for Cloudflare R2 (uploads: identity documents, menu photos). The backend talks
+    # to it through the same S3 API as R2. MinIO no longer publishes container images, so S3Mock is used.
+    image: adobe/s3mock:5.2.3
+    restart: unless-stopped
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: ${BONBON_STORAGE_PRIVATE_BUCKET:-bonbon-private},${BONBON_STORAGE_PUBLIC_BUCKET:-bonbon-public}
+      COM_ADOBE_TESTING_S3MOCK_STORE_ROOT: /s3mockroot
+      COM_ADOBE_TESTING_S3MOCK_STORE_RETAIN_FILES_ON_EXIT: "true"
+    ports:
+      - "127.0.0.1:${S3_PORT:-9090}:9090"
+    volumes:
+      - s3-data:/s3mockroot
+
 volumes:
   postgres-data:
+  s3-data:
