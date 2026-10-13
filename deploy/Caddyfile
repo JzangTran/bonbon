@@ -1,0 +1,41 @@
+# Edge of the production stack: HTTPS (automatic Let's Encrypt for BONBON_DOMAIN), the API and its WebSocket
+# proxied to the backend, everything else served from the web image's static files with SPA fallback.
+
+{$BONBON_DOMAIN} {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+	handle /ws/* {
+		reverse_proxy backend:8080
+	}
+	# Probes stay inside the compose network.
+	handle /actuator/* {
+		respond 404
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@html not path /assets/*
+		header @html Cache-Control "no-cache"
+		# The web app loads Google sign-in and reCAPTCHA; images can come from the object storage's public URL.
+		header @html Content-Security-Policy "default-src 'self'; script-src 'self' https://accounts.google.com https://www.google.com https://www.gstatic.com; frame-src https://accounts.google.com https://www.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' wss: https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
