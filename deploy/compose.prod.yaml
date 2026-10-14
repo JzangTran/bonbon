@@ -1,0 +1,85 @@
+# Production on one VPS: Caddy (HTTPS + static web) → backend → PostgreSQL and Redis. Object storage is Cloudflare R2
+# and email is an SMTP provider, both outside this file. Every secret comes from deploy/.env.prod (never committed).
+#   docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod up -d
+# Only Caddy publishes ports; the database, Redis and the backend are reachable only on the compose network.
+
+name: bonbon
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  caddy:
+    image: ${BONBON_WEB_IMAGE:-bonbon-web:latest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      BONBON_DOMAIN: ${BONBON_DOMAIN:?set BONBON_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging: *logging
+
+  backend:
+    image: ${BONBON_BACKEND_IMAGE:-bonbon-backend:latest}
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      BONBON_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bonbon}
+      BONBON_DB_USER: ${POSTGRES_USER:-bonbon}
+      BONBON_DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      BONBON_REDIS_HOST: redis
+      BONBON_REDIS_PORT: "6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging: *logging
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bonbon}
+      POSTGRES_USER: ${POSTGRES_USER:-bonbon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    # Rate-limit counters, token revocations and role-selection tokens; append-only so a restart keeps them.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:

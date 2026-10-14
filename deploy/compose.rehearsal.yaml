@@ -1,0 +1,36 @@
+# Local rehearsal of the production stack (no domain, no R2, no SMTP): layered on top of compose.prod.yaml.
+#   docker compose -f deploy/compose.prod.yaml -f deploy/compose.rehearsal.yaml --env-file deploy/.env.prod up -d
+# Serves plain HTTP on http://localhost:8088, stores files in S3Mock and catches email in Mailpit (http://localhost:18025).
+
+services:
+  caddy:
+    ports: !override
+      - "8088:80"
+    environment:
+      BONBON_DOMAIN: ":80"
+
+  backend:
+    environment:
+      BONBON_WEB_URL: http://localhost:8088
+      BONBON_CORS_ORIGINS: http://localhost:8088
+      BONBON_STORAGE_ENDPOINT: http://s3:9090
+      BONBON_STORAGE_PUBLIC_BASE_URL: http://localhost:8088/files
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: "1025"
+      SPRING_MAIL_USERNAME: ""
+      SPRING_MAIL_PASSWORD: ""
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+      BONBON_CAPTCHA_ENABLED: "false"
+    depends_on:
+      s3:
+        condition: service_started
+
+  s3:
+    image: adobe/s3mock:5.2.3
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: bonbon-private,bonbon-public
+
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    ports:
+      - "127.0.0.1:18025:8025"
