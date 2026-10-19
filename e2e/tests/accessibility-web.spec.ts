@@ -55,8 +55,10 @@ test('admin pages', async ({ page }) => {
 test('keyboard users can skip to the main content', async ({ page }) => {
   await signInWeb(page, '/seller/login', 'demo.seller1@example.com', env.demoPassword)
   await page.goto(`${env.web}/seller/orders`)
-  await page.keyboard.press('Tab')
   const skip = page.getByRole('link', { name: 'Bỏ qua đến nội dung chính' })
+  // The workspace mounts after the session check; a Tab pressed before that goes nowhere.
+  await expect(skip).toBeAttached()
+  await page.keyboard.press('Tab')
   await expect(skip).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page.locator('main#main')).toBeFocused()
