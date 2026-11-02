@@ -35,8 +35,8 @@ test('customer orders, shop fulfils, customer sees it delivered', async ({ brows
   const { number } = await api<{ number: number }>('GET', `/api/orders/${orderId}`, { token })
 
   // Shop: sign in on the web, take the order and move it forward step by step.
-  await signInWeb(seller, '/seller/login', demo.seller, env.demoPassword)
-  await seller.goto(`${env.web}/seller/orders`)
+  await signInWeb(seller, '/merchant/login', demo.seller, env.demoPassword)
+  await seller.goto(`${env.web}/merchant/orders`)
   const row = seller.getByRole('listitem').filter({ has: seller.getByRole('button', { name: `Mở đơn #${number}` }) })
   await row.getByRole('button', { name: 'Nhận đơn' }).click()
 
