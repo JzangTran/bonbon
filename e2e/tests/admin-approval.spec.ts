@@ -7,8 +7,8 @@ import { signInWeb } from '../support/web'
 test('admin approves a submitted shop application', async ({ page }) => {
   const shopName = await submitShopApplication()
 
-  await signInWeb(page, '/admin/login', env.adminEmail, env.adminPassword)
-  await page.goto(`${env.web}/admin/shop-review`)
+  await signInWeb(page, '/console/login', env.adminEmail, env.adminPassword)
+  await page.goto(`${env.web}/console/shop-review`)
   await page.getByLabel('Tìm cửa hàng').fill(shopName)
   await page.getByRole('row').filter({ hasText: shopName }).getByRole('link', { name: 'Xem hồ sơ' }).click()
 

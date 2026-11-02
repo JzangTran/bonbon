@@ -69,10 +69,12 @@ export async function submitShopApplication(): Promise<string> {
   await api('GET', `/api/auth/verify-email?token=${await verificationToken(email)}`)
   const token = await login(email, 'SELLER')
 
-  const [place] = await api<{ placeId: string }[]>('GET', `/api/geo/autocomplete?input=${encodeURIComponent('Vinhomes Smart City Tây Mỗ')}`, { token })
+  // Step 1 takes a point on the map with the province and ward codes of the list, as the seed does (inside the demo service area).
+  const [suggestion] = await api<{ placeId: string }[]>('GET', `/api/geo/autocomplete?input=${encodeURIComponent('Vinhomes Smart City Tây Mỗ')}`, { token })
+  const place = await api<{ provinceCode: string; wardCode: string; lat: number; lng: number }>('GET', `/api/geo/place?placeId=${encodeURIComponent(suggestion.placeId)}`, { token })
   const hours = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, opensAt: '07:00', closesAt: '21:00' }))
   const steps = [
-    { name, phone: '0900000399', email, placeId: place.placeId, addressDetail: 'Ki-ốt thử nghiệm' },
+    { name, phone: '0900000399', email, provinceCode: place.provinceCode, wardCode: place.wardCode, lat: place.lat, lng: place.lng, addressDetail: 'Ki-ốt thử nghiệm' },
     { openingHours: hours, deliveryRadiusKm: 2, deliveryFee: 5000 },
     { businessType: 'INDIVIDUAL', businessAddress: 'Ki-ốt thử nghiệm', taxCode: '0100000000', invoiceEmails: [email],
       bankName: 'Vietcombank', accountNumber: '0000000000', accountHolderName: 'Người bán E2E' },

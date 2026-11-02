@@ -7,14 +7,15 @@ import { signInWeb } from '../support/web'
  * WCAG 2.2 AA checks (axe) on every page of the web app, signed out, as a seller and as an administrator.
  * Pages that need an id are reached through their list page instead. Fails on serious or critical violations.
  */
-const PUBLIC = ['/', '/seller/login', '/admin/login', '/seller/register', '/forgot-password', '/legal/CUSTOMER_TERMS']
-const SELLER = ['/seller', '/seller/shop', '/seller/orders', '/seller/menu', '/seller/statistics', '/seller/performance',
-  '/seller/order-cases', '/seller/chat', '/seller/help', '/seller/support-tickets', '/seller/notification-settings',
-  '/seller/earnings', '/seller/reviews', '/seller/account', '/seller/category-cases']
-const ADMIN = ['/admin', '/admin/statistics', '/admin/merchants', '/admin/shop-review', '/admin/categories',
-  '/admin/category-moderation', '/admin/commission', '/admin/settlement', '/admin/refunds', '/admin/order-cases',
-  '/admin/penalties', '/admin/reviews', '/admin/lookup', '/admin/support-tickets', '/admin/help-articles',
-  '/admin/legal-documents', '/admin/app-config', '/admin/admins']
+const PUBLIC = ['/', '/merchant/login', '/console/login', '/merchant/register', '/forgot-password', '/help', '/help/legal/CUSTOMER_TERMS',
+  '/guides/getting-started', '/resources/design', '/not-a-page']
+const SELLER = ['/merchant', '/merchant/shop', '/merchant/orders', '/merchant/menu', '/merchant/statistics', '/merchant/performance',
+  '/merchant/order-cases', '/merchant/chat', '/merchant/help', '/merchant/support-tickets', '/merchant/notification-settings',
+  '/merchant/earnings', '/merchant/reviews', '/merchant/account', '/merchant/category-cases']
+const ADMIN = ['/console', '/console/statistics', '/console/merchants', '/console/shop-review', '/console/categories',
+  '/console/category-moderation', '/console/commission', '/console/settlement', '/console/refunds', '/console/order-cases',
+  '/console/penalties', '/console/reviews', '/console/lookup', '/console/support-tickets', '/console/help-articles',
+  '/console/legal-documents', '/console/service-areas', '/console/contact-requests', '/console/admins', '/ops', '/ops/app-config']
 
 type Finding = { page: string; rule: string; impact: string; count: number; help: string; target: string }
 
@@ -43,18 +44,18 @@ test('public pages', async ({ page }) => {
 })
 
 test('seller pages', async ({ page }) => {
-  await signInWeb(page, '/seller/login', 'demo.seller1@example.com', env.demoPassword)
+  await signInWeb(page, '/merchant/login', 'demo.seller1@example.com', env.demoPassword)
   report(await audit(page, SELLER))
 })
 
 test('admin pages', async ({ page }) => {
-  await signInWeb(page, '/admin/login', env.adminEmail, env.adminPassword)
+  await signInWeb(page, '/console/login', env.adminEmail, env.adminPassword)
   report(await audit(page, ADMIN))
 })
 
 test('keyboard users can skip to the main content', async ({ page }) => {
-  await signInWeb(page, '/seller/login', 'demo.seller1@example.com', env.demoPassword)
-  await page.goto(`${env.web}/seller/orders`)
+  await signInWeb(page, '/merchant/login', 'demo.seller1@example.com', env.demoPassword)
+  await page.goto(`${env.web}/merchant/orders`)
   const skip = page.getByRole('link', { name: 'Bỏ qua đến nội dung chính' })
   // The workspace mounts after the session check; a Tab pressed before that goes nowhere.
   await expect(skip).toBeAttached()
@@ -64,11 +65,11 @@ test('keyboard users can skip to the main content', async ({ page }) => {
   await expect(page.locator('main#main')).toBeFocused()
 })
 
+// Below 1024 px only the public pages open; the seller and staff pages show the invitation to the app (or to a computer) instead.
 test('no horizontal scrolling at 320 px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 })
-  await signInWeb(page, '/admin/login', env.adminEmail, env.adminPassword)
   const wide: string[] = []
-  for (const path of ['/', '/admin', '/admin/shop-review', '/admin/merchants', '/admin/statistics', '/admin/settlement']) {
+  for (const path of ['/', '/guides/getting-started', '/help', '/resources/design', '/merchant/login', '/merchant/orders', '/console', '/not-a-page']) {
     await page.goto(env.web + path)
     await page.waitForLoadState('networkidle')
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
