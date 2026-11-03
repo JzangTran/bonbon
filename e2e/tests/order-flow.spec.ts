@@ -17,7 +17,7 @@ test('customer orders, shop fulfils, customer sees it delivered', async ({ brows
   const seller = await sellerCtx.newPage()
 
   // Customer: sign in, open the shop, add a dish, place the order.
-  await customer.goto(env.mobile)
+  await customer.goto(`${env.mobile}/login`) // the app opens on the home page; sign-in is its own screen
   await customer.getByLabel('Email').fill(demo.customer)
   await customer.getByLabel('Mật khẩu').fill(env.demoPassword)
   await customer.getByRole('button', { name: 'Đăng nhập', exact: true }).click()

@@ -19,7 +19,7 @@ const SELLER = ['/seller', '/seller/menu', '/seller/shop', '/seller/earnings', '
 test.use({ viewport: { width: 400, height: 860 } })
 
 async function signIn(page: Page, email: string) {
-  await page.goto(env.mobile)
+  await page.goto(`${env.mobile}/login`) // the app opens on the home page; sign-in is its own screen
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Mật khẩu').fill(env.demoPassword)
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click()
