@@ -22,7 +22,7 @@ test('customer orders, shop fulfils, customer sees it delivered', async ({ brows
   await customer.getByLabel('Mật khẩu').fill(env.demoPassword)
   await customer.getByRole('button', { name: 'Đăng nhập', exact: true }).click()
 
-  await customer.getByRole('button', { name: `${demo.shop}, đang mở` }).click()
+  await customer.getByRole('button', { name: demo.shop, exact: true }).click()
   await customer.getByRole('button', { name: demo.dish, exact: true }).click()
   await customer.getByRole('button', { name: /^Thêm vào giỏ/ }).click()
   await customer.getByRole('button', { name: /^Xem giỏ hàng/ }).click()
