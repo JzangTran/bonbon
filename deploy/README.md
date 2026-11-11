@@ -74,3 +74,37 @@ docker compose -f deploy/compose.prod.yaml -f deploy/compose.rehearsal.yaml --en
 COMPOSE_FILES="-f compose.prod.yaml -f compose.rehearsal.yaml" deploy/backup.sh
 COMPOSE_FILES="-f compose.prod.yaml -f compose.rehearsal.yaml" deploy/restore.sh <dump>
 ```
+
+## Demo server and continuous deployment
+
+The demo runs this production stack on one VPS (Ubuntu 24.04, 4 GB) at https://bonbon.pro.vn, with `compose.demo.yaml` on
+top: the backend uses the `demo` profile (production settings, but the fake MoMo page and no reCAPTCHA), email goes to a
+Mailpit container, and memory is capped per service.
+
+Every merge to `main` of `bonbon-backend` or `bonbon-web` runs CI; when it passes, that repo's `Deploy` workflow builds the
+image, pushes it to `ghcr.io/jzangtran/bonbon-backend` or `bonbon-web`, and logs in to the VPS as `deploy`, whose key can only
+run `/opt/bonbon/deploy.sh`. The script fetches this folder's compose files, Caddyfile and backup scripts from `main`, pulls
+the new image and restarts that service. A change to those files on `main` here runs `Deploy config`.
+
+| File | Purpose |
+|---|---|
+| `compose.demo.yaml` | The demo overlay on `compose.prod.yaml` |
+| `.env.demo.example` | The demo's settings; the real file is `/opt/bonbon/.env.prod` and never leaves the server |
+| `vps/bootstrap.sh` | One-time setup of the VPS: Docker, 2 GB swap, firewall (22, 80, 443), the `deploy` user |
+| `vps/deploy.sh` | The rollout GitHub Actions runs over SSH |
+
+### One-time setup
+
+1. On the VPS as root: `curl -fsSL https://raw.githubusercontent.com/JzangTran/bonbon/main/deploy/vps/bootstrap.sh | bash`
+2. Fill `/opt/bonbon/.env.prod` from `.env.demo.example`, then `chown deploy:deploy` and `chmod 600` it.
+3. On your machine: `ssh-keygen -t ed25519 -f bonbon-deploy -N ""`. Add the public key to `/home/deploy/.ssh/authorized_keys`
+   as one line: `command="/opt/bonbon/deploy.sh",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ssh-ed25519 AAAA… bonbon-deploy`
+4. In `bonbon-backend`, `bonbon-web` and `bonbon`, add the repository secrets `VPS_HOST` (103.90.225.254), `VPS_USER`
+   (`deploy`), `VPS_SSH_KEY` (the private key file) and `VPS_KNOWN_HOSTS` (the output of `ssh-keyscan 103.90.225.254`).
+   In `bonbon-web`, add the repository variable `VITE_SITE_URL` = `https://bonbon.pro.vn`.
+5. Run `Deploy` by hand once in `bonbon-backend` and in `bonbon-web` (Actions tab). Then make both packages public in their
+   GitHub package settings, so the server pulls them without a token.
+6. Run `Deploy config` in this repo once: it starts the whole stack.
+
+The demo's inbox: `ssh -L 8025:127.0.0.1:8025 root@103.90.225.254`, then http://localhost:8025.
+Backups: add the cron line from "Backups" above, with `/opt/bonbon/backup.sh`.
