@@ -81,7 +81,8 @@ The demo runs this production stack on one VPS (Ubuntu 24.04, 4 GB) at https://b
 top: the backend uses the `demo` profile (production settings, but the fake MoMo page and no reCAPTCHA), email goes to a
 Mailpit container, and memory is capped per service.
 
-Every merge to `main` of `bonbon-backend` or `bonbon-web` runs CI; when it passes, that repo's `Deploy` workflow builds the
+Every merge to `develop` of `bonbon-backend` or `bonbon-web` runs CI (the demo follows `develop` for now; switch the
+`branches` of their `Deploy` workflows back to `main` once the server is for real users); when it passes, that repo's `Deploy` workflow builds the
 image, pushes it to `ghcr.io/jzangtran/bonbon-backend` or `bonbon-web`, and logs in to the VPS as `deploy`, whose key can only
 run `/opt/bonbon/deploy.sh`. The script fetches this folder's compose files, Caddyfile and backup scripts from `main`, pulls
 the new image and restarts that service. A change to those files on `main` here runs `Deploy config`.

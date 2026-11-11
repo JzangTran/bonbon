@@ -5,6 +5,9 @@
 set -euo pipefail
 
 cd /opt/bonbon
+# one rollout at a time: backend and web can both be merged at once, and the web waits for a healthy backend
+exec 9>/opt/bonbon/.deploy.lock
+flock 9
 target="${1:-${SSH_ORIGINAL_COMMAND:-}}"
 case "$target" in
   backend) service=backend ;;
@@ -19,6 +22,8 @@ for file in compose.prod.yaml compose.demo.yaml Caddyfile backup.sh restore.sh; 
   curl -fsSL "$raw/$file" -o "$file.new" && mv "$file.new" "$file"
 done
 chmod 750 backup.sh restore.sh
+# and this script itself, for the next rollout (mv swaps the file; the running copy is not touched)
+curl -fsSL "$raw/vps/deploy.sh" -o deploy.sh.new && chmod 750 deploy.sh.new && mv deploy.sh.new deploy.sh
 
 export COMPOSE_FILE=compose.prod.yaml:compose.demo.yaml
 compose() { docker compose --env-file .env.prod "$@"; }
