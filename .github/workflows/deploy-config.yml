@@ -1,0 +1,35 @@
+name: Deploy config
+
+# When the demo's compose files or Caddyfile change on main, the server picks them up (deploy/vps/deploy.sh config).
+on:
+  push:
+    branches: [main]
+    paths:
+      - deploy/compose.prod.yaml
+      - deploy/compose.demo.yaml
+      - deploy/Caddyfile
+      - deploy/backup.sh
+      - deploy/restore.sh
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Apply on the server
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" config

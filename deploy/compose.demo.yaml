@@ -1,0 +1,32 @@
+# The demo server (https://bonbon.pro.vn), layered on top of compose.prod.yaml: the same stack, but the backend runs the `demo`
+# profile (fake MoMo page, no reCAPTCHA) and email lands in Mailpit instead of an SMTP provider. Memory capped for a 4 GB VPS.
+#   docker compose -f compose.prod.yaml -f compose.demo.yaml --env-file .env.prod up -d
+# On the server deploy/vps/deploy.sh runs this for every rollout from GitHub Actions.
+
+services:
+  caddy:
+    mem_limit: 128m
+
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: "1025"
+      SPRING_MAIL_USERNAME: ""
+      SPRING_MAIL_PASSWORD: ""
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+    mem_limit: 1600m
+
+  postgres:
+    mem_limit: 768m
+
+  redis:
+    mem_limit: 128m
+
+  # The demo's inbox (verification, password reset): open it through an SSH tunnel to 127.0.0.1:8025.
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+    mem_limit: 96m
