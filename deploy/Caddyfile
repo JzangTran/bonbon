@@ -1,7 +1,10 @@
-# Edge of the production stack: HTTPS (automatic Let's Encrypt for BONBON_DOMAIN), the API and its WebSocket
-# proxied to the backend, everything else served from the web image's static files with SPA fallback.
+# Edge of the production stack: HTTPS (automatic Let's Encrypt for BONBON_DOMAIN and its four subdomains), the API and its
+# WebSocket proxied to the backend, everything else served from the web image's static files with SPA fallback.
+# One web build serves every host and picks its pages from the host name (web/src/shared/config/sites.ts):
+#   BONBON_DOMAIN public site, merchant.* sellers, help.* help center, console.* administrators, ops.* infrastructure.
+# Every name needs a DNS record pointing at this server before Caddy can get its certificate.
 
-{$BONBON_DOMAIN} {
+{$BONBON_DOMAIN}, merchant.{$BONBON_DOMAIN}, help.{$BONBON_DOMAIN}, console.{$BONBON_DOMAIN}, ops.{$BONBON_DOMAIN} {
 	encode zstd gzip
 
 	handle /api/* {
