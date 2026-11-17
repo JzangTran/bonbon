@@ -2,15 +2,55 @@
 # WebSocket proxied to the backend, everything else served from the web image's static files with SPA fallback.
 # One web build serves every host and picks its pages from the host name (web/src/shared/config/sites.ts):
 #   BONBON_DOMAIN public site, merchant.* sellers, help.* help center, console.* administrators, ops.* infrastructure.
+#   developers.* the developer portal (the API reference, for developers an administrator approved).
+# api.* is the API's own host: the base URL for the phone app and for developers. The web hosts keep /api on the same origin.
 # Every name needs a DNS record pointing at this server before Caddy can get its certificate.
 
-{$BONBON_DOMAIN}, merchant.{$BONBON_DOMAIN}, help.{$BONBON_DOMAIN}, console.{$BONBON_DOMAIN}, ops.{$BONBON_DOMAIN} {
+api.{$BONBON_DOMAIN} {
 	encode zstd gzip
 
 	handle /api/* {
 		reverse_proxy backend:8080
 	}
 	handle /ws/* {
+		reverse_proxy backend:8080
+	}
+	# The OpenAPI document; the backend serves it only to an approved developer's token.
+	handle /v3/api-docs* {
+		reverse_proxy backend:8080
+	}
+	# Anyone opening the API host in a browser lands on the developer portal.
+	handle / {
+		redir https://developers.{$BONBON_DOMAIN} 302
+	}
+	handle {
+		respond 404
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
+
+{$BONBON_DOMAIN}, merchant.{$BONBON_DOMAIN}, help.{$BONBON_DOMAIN}, console.{$BONBON_DOMAIN}, ops.{$BONBON_DOMAIN}, developers.{$BONBON_DOMAIN} {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+	handle /ws/* {
+		reverse_proxy backend:8080
+	}
+	# The OpenAPI document for the developer portal (the backend checks the developer's token).
+	handle /v3/api-docs* {
 		reverse_proxy backend:8080
 	}
 	# Probes stay inside the compose network.
